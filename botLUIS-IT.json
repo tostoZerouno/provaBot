@@ -1,0 +1,190 @@
+{
+  "luis_schema_version": "1.3.1",
+  "versionId": "0.1",
+  "name": "botLUIS-IT",
+  "desc": "",
+  "culture": "it-it",
+  "intents": [
+    {
+      "name": "CercaMeteo"
+    },
+    {
+      "name": "CercaNotizie"
+    },
+    {
+      "name": "Help"
+    },
+    {
+      "name": "None"
+    },
+    {
+      "name": "Saluto"
+    }
+  ],
+  "entities": [
+    {
+      "name": "location"
+    },
+    {
+      "name": "searchContent"
+    }
+  ],
+  "composites": [],
+  "closedLists": [],
+  "bing_entities": [],
+  "actions": [],
+  "model_features": [],
+  "regex_features": [],
+  "utterances": [
+    {
+      "text": "help",
+      "intent": "Help",
+      "entities": []
+    },
+    {
+      "text": "?",
+      "intent": "Help",
+      "entities": []
+    },
+    {
+      "text": "aiuto",
+      "intent": "Help",
+      "entities": []
+    },
+    {
+      "text": "cosa posso fare?",
+      "intent": "Help",
+      "entities": []
+    },
+    {
+      "text": "cerca notizie sul calcio",
+      "intent": "CercaNotizie",
+      "entities": [
+        {
+          "entity": "searchContent",
+          "startPos": 3,
+          "endPos": 3
+        }
+      ]
+    },
+    {
+      "text": "cerca notizie su brescia",
+      "intent": "CercaNotizie",
+      "entities": [
+        {
+          "entity": "location",
+          "startPos": 3,
+          "endPos": 3
+        }
+      ]
+    },
+    {
+      "text": "cosa succede a new york?",
+      "intent": "CercaNotizie",
+      "entities": [
+        {
+          "entity": "location",
+          "startPos": 3,
+          "endPos": 4
+        }
+      ]
+    },
+    {
+      "text": "cosa succede in politica?",
+      "intent": "CercaNotizie",
+      "entities": [
+        {
+          "entity": "searchContent",
+          "startPos": 3,
+          "endPos": 3
+        }
+      ]
+    },
+    {
+      "text": "hai qualche notizia sui nanotubi di carbonio?",
+      "intent": "CercaNotizie",
+      "entities": [
+        {
+          "entity": "searchContent",
+          "startPos": 4,
+          "endPos": 6
+        }
+      ]
+    },
+    {
+      "text": "che tempo c'è a brescia?",
+      "intent": "CercaMeteo",
+      "entities": [
+        {
+          "entity": "location",
+          "startPos": 6,
+          "endPos": 6
+        }
+      ]
+    },
+    {
+      "text": "che tempo fa a roma?",
+      "intent": "CercaMeteo",
+      "entities": [
+        {
+          "entity": "location",
+          "startPos": 4,
+          "endPos": 4
+        }
+      ]
+    },
+    {
+      "text": "che tempo fa a lumezzane?",
+      "intent": "CercaMeteo",
+      "entities": [
+        {
+          "entity": "location",
+          "startPos": 4,
+          "endPos": 4
+        }
+      ]
+    },
+    {
+      "text": "meteo concesio",
+      "intent": "CercaMeteo",
+      "entities": [
+        {
+          "entity": "location",
+          "startPos": 1,
+          "endPos": 1
+        }
+      ]
+    },
+    {
+      "text": "meteo per padenghe",
+      "intent": "CercaMeteo",
+      "entities": [
+        {
+          "entity": "location",
+          "startPos": 2,
+          "endPos": 2
+        }
+      ]
+    },
+    {
+      "text": "ciao!",
+      "intent": "Saluto",
+      "entities": []
+    },
+    {
+      "text": "buongiorno!",
+      "intent": "Saluto",
+      "entities": []
+    },
+    {
+      "text": "salve",
+      "intent": "Saluto",
+      "entities": []
+    },
+    {
+      "text": "buonasera",
+      "intent": "Saluto",
+      "entities": []
+    }
+  ]
+}
