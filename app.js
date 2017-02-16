@@ -8,7 +8,7 @@ var spellService = require('./spell-service');
 var meteoService = require('./meteo-service');
 // Setup Restify Server
 var server = restify.createServer();
-server.listen(process.env.port || process.env.PORT || 3978, function () {
+server.listen(process.env.port || process.env.PORT || 443, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
 
