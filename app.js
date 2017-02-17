@@ -12,8 +12,13 @@ server.listen(process.env.port || process.env.PORT || 443, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
 
-server.get(/\/docs\/public\/?.*/, restify.serveStatic({
-  directory: './public'
+//server.get(/\/docs\/public\/?.*/, restify.serveStatic({
+//  directory: './public'
+//}));
+
+server.get(/.*/, restify.serveStatic({
+  directory: './static',
+  default: 'index.html'
 }));
 
 // Create chat bot
