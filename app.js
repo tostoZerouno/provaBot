@@ -163,6 +163,7 @@ bot.dialog('/continue',
                 message = "Buonasera!";
             }
             session.send(message);
+            session.send(session.message.address)
         })
         .matches('Help', builder.DialogAction.send('Ciao! prova a chiedermi "cerca notizie su Microsoft" o "cerca meteo per Brescia" '))
         .onDefault((session) => {
