@@ -17,8 +17,8 @@ server.listen(process.env.port || process.env.PORT || 443, function () {
 //}));
 
 server.get(/.*/, restify.serveStatic({
-    directory: './static',
-    default: 'index.html'
+  directory: './static',
+  default: 'index.html'
 }));
 
 // Create chat bot
@@ -36,15 +36,7 @@ const LuisModelUrl = process.env.LUIS_MODEL_URL;
 // Main dialog with LUIS
 var recognizer = new builder.LuisRecognizer(LuisModelUrl);
 //console.log('cosa matchi? \'%s\'', recognizer.matches);
-bot.dialog('/', [ function (session, args, next) {
-        if (!session.userData.name) {
-            session.beginDialog('/profile');
-        } else {
-            //console.log(session.message.address);
-            next(session);
-        }
-    },    
-    function (session, results) {new builder.IntentDialog({ recognizers: [recognizer] })
+bot.dialog('/', new builder.IntentDialog({ recognizers: [recognizer] })
     .matches('CercaNotizie', [
         function (session, args, next) {
             session.send('Benvenuto! Stiamo analizzando il tuo messaggio: \'%s\'', session.message.text);
@@ -154,18 +146,7 @@ bot.dialog('/', [ function (session, args, next) {
     .matches('Help', builder.DialogAction.send('Ciao! prova a chiedermi "cerca notizie su Microsoft" o "cerca meteo per Brescia" '))
     .onDefault((session) => {
         session.send('Mi spiace, ma non capisco \'%s\'. Scrivi \'Aiuto\' Se hai bisogno di assistenza.', session.message.text);
-    })}]);
-
-bot.dialog('/profile', [
-    function (session) {
-        builder.Prompts.text(session, 'Hi! What is your name?');
-    },
-    function (session, results) {
-        session.userData.name = results.response;
-        session.endDialog();
-    }
-]);
-
+    }));
 
 if (process.env.IS_SPELL_CORRECTION_ENABLED === 'true') {
     bot.use({
