@@ -37,7 +37,7 @@ const LuisModelUrl = process.env.LUIS_MODEL_URL;
 var recognizer = new builder.LuisRecognizer(LuisModelUrl);
 //console.log('cosa matchi? \'%s\'', recognizer.matches);
 bot.dialog('/', function (session, args) {
-    if (!session.userData.name) {
+    if (!session.userData.authenticated) {
         session.beginDialog('/profile');
     } else {
         console.log(session.message.address);
@@ -49,10 +49,22 @@ bot.dialog('/profile', [
     function (session) {
         builder.Prompts.text(session, 'Ciao! Come ti chiami?');
     },
-    function (session, results) {
+    function (session, results,next) {
         session.userData.name = results.response;
-        session.send("benvenuto %s",session.userData.name);
+        //session.send("benvenuto %s",session.userData.name);
+        builder.Prompts.text(session,"inserisci password: ");
 
+        //session.endDialog();
+
+    },
+    function (session, results) {
+        if (results.response === "password") {
+            session.userData.authenticated = true;
+            session.send("benvenuto %s", session.userData.name);
+        } else {
+            session.send("password errata, utente non autorizzato");
+            session.userData = null;
+        }
         session.endDialog();
     }
 ]);
@@ -163,13 +175,14 @@ bot.dialog('/continue',
             } else {
                 message = "Buonasera!";
             }
-            message = message+" "+session.userData.name;
+            message = message + " " + session.userData.name;
             session.send(message);
-            
+            session.endDialog();
+
         })
         .matches('Help', builder.DialogAction.send('Ciao! prova a chiedermi "cerca notizie su Microsoft" o "cerca meteo per Brescia" '))
-        .matches('logout', (session)=>{
-            session.userData= null;
+        .matches('logout', (session) => {
+            session.userData = null;
             session.send("Arrivederci!");
             session.endDialog();
         })
