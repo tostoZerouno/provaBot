@@ -40,11 +40,11 @@ bot.dialog('/', [ function (session, args, next) {
         if (!session.userData.name) {
             session.beginDialog('/profile');
         } else {
-            console.log(session.message.address);
-            next();
+            //console.log(session.message.address);
+            next(session);
         }
     },    
-    (session)=>{new builder.IntentDialog({ recognizers: [recognizer] })
+    function (session, results) {new builder.IntentDialog({ recognizers: [recognizer] })
     .matches('CercaNotizie', [
         function (session, args, next) {
             session.send('Benvenuto! Stiamo analizzando il tuo messaggio: \'%s\'', session.message.text);
