@@ -73,7 +73,7 @@ bot.dialog('/profile', [
             generatePin(session);
             sendMail(session.userData.mail,mailPin[session.userData.mail]);
             console.log(mailPin[session.userData.mail]);
-            builder.Prompts.text(session, "inserisci password: ");
+            builder.Prompts.text(session, "Abbiamo inviato una mail con il pin all'indirizzo fornito, inseriscilo qui di seguito: ");
         }else{
             session.send("username invalido");
             session.endDialog();
