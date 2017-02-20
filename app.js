@@ -6,6 +6,22 @@ var restify = require('restify');
 var Store = require('./store');
 var spellService = require('./spell-service');
 var meteoService = require('./meteo-service');
+var mailer = require("nodemailer");
+
+var mailPin = {};
+
+// Use Smtp Protocol to send Email
+var smtpTransport = mailer.createTransport({
+    service: "Outlook",
+    auth: {
+        user: "tommaso.tosi92@outlook.it",
+        pass: "!01Stg3z"
+    }
+});
+
+
+
+
 // Setup Restify Server
 var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 443, function () {
@@ -49,19 +65,27 @@ bot.dialog('/profile', [
     function (session) {
         builder.Prompts.text(session, 'Ciao! Come ti chiami?');
     },
-    function (session, results,next) {
+    function (session,results) {
         session.userData.name = results.response;
+        builder.Prompts.text(session, 'Inserisci un indirizzo mail a cui possa inviare il PIN');
+    },
+    function (session, results) {
+        session.userData.mail = results.response;
         //session.send("benvenuto %s",session.userData.name);
-        builder.Prompts.text(session,"inserisci password: ");
+        generatePin(session);
+        sendMail(session.userData.mail,mailPin[session.userData.mail]);
+        console.log(mailPin[session.userData.mail]);
+        builder.Prompts.text(session, "inserisci password: ");       
 
         //session.endDialog();
 
     },
     function (session, results) {
-        if (results.response === "password") {
+        if (mailPin[session.userData.mail] && results.response == mailPin[session.userData.mail]) {
             session.userData.authenticated = true;
             session.send("benvenuto %s", session.userData.name);
         } else {
+            console.log(mailPin[session.userData.mail]);
             session.send("password errata, utente non autorizzato");
             session.userData = null;
         }
@@ -225,4 +249,35 @@ function videoAsAttachment(videos) {
                 .type('openUrl')
                 .value(videos.url)
         ]);
+}
+
+function sendMail(indirizzo, PIN) {
+    
+    var mail = {
+        from: "Tommaso Tosi <tommaso.tosi92@outlook.it>",
+        to: indirizzo,
+        subject: "invio codice",
+        text: "PIN",
+        html: "<b>"+PIN+"</b>"
+    }
+
+    smtpTransport.sendMail(mail, function (error, response) {
+        if (error) {
+            console.log(error);
+        } else {
+            console.log("Message sent: " + response.message);
+        }
+
+        smtpTransport.close();
+    });
+}
+
+function generatePin(session){
+    var PIN = Math.ceil(Math.random()*1000);
+    //session.userData.pin = PIN;
+    mailPin[session.userData.mail]=PIN;
+    console.log(mailPin);
+    setTimeout(function() {
+        mailPin[session.userData.mail] = null;
+    }, 12000);
 }
