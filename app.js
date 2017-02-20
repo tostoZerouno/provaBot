@@ -17,8 +17,8 @@ server.listen(process.env.port || process.env.PORT || 443, function () {
 //}));
 
 server.get(/.*/, restify.serveStatic({
-  directory: './static',
-  default: 'index.html'
+    directory: './static',
+    default: 'index.html'
 }));
 
 // Create chat bot
@@ -36,134 +36,142 @@ const LuisModelUrl = process.env.LUIS_MODEL_URL;
 // Main dialog with LUIS
 var recognizer = new builder.LuisRecognizer(LuisModelUrl);
 //console.log('cosa matchi? \'%s\'', recognizer.matches);
-bot.dialog('/', new builder.IntentDialog({ recognizers: [recognizer] })
-    .matches('CercaNotizie', [
-        function (session, args, next) {
-            session.send('Benvenuto! Stiamo analizzando il tuo messaggio: \'%s\'', session.message.text);
+bot.dialog('/', function (session, args) {
+    if (!session.userData.name) {
+        session.beginDialog('/profile');
+    } else {
+        console.log(session.message.address);
+        session.replaceDialog('/continue');
+    }
+});
 
-            // try extracting entities
-            var contentEntity = builder.EntityRecognizer.findEntity(args.entities, 'searchContent');
-            var locationEntity = builder.EntityRecognizer.findEntity(args.entities, 'location');
-            //console.log("Entity: ");
-            //console.log(contentEntity);
-            if (contentEntity) {
-                // content detected, continue to next step
-                //session.dialogData.searchType = 'content';
-                console.log("FOUND");
-                next({ response: contentEntity.entity });
-            } else if (locationEntity) {
-                console.log("FOUND");
-                next({ response: locationEntity.entity });
-            } else {
-                // no entities detected, ask user for a content
-                builder.Prompts.text(session, 'Per favore inserisci il contenuto da cercare: ');
-                console.log("NOTFOUND");
+bot.dialog('/profile', [
+    function (session) {
+        builder.Prompts.text(session, 'Ciao! Come ti chiami?');
+    },
+    function (session, results) {
+        session.userData.name = results.response;
+        session.send("benvenuto %s",session.userData.name)
+        session.endDialog();
+    }
+]);
+
+bot.dialog('/continue',
+    new builder.IntentDialog({ recognizers: [recognizer] })
+        .matches('CercaNotizie', [
+            function (session, args, next) {
+                session.send('Benvenuto! Stiamo analizzando il tuo messaggio: \'%s\'', session.message.text);
+
+                // try extracting entities
+                var contentEntity = builder.EntityRecognizer.findEntity(args.entities, 'searchContent');
+                var locationEntity = builder.EntityRecognizer.findEntity(args.entities, 'location');
+                //console.log("Entity: ");
+                //console.log(contentEntity);
+                if (contentEntity) {
+                    // content detected, continue to next step
+                    //session.dialogData.searchType = 'content';
+                    console.log("FOUND");
+                    next({ response: contentEntity.entity });
+                } else if (locationEntity) {
+                    console.log("FOUND");
+                    next({ response: locationEntity.entity });
+                } else {
+                    // no entities detected, ask user for a content
+                    builder.Prompts.text(session, 'Per favore inserisci il contenuto da cercare: ');
+                    console.log("NOTFOUND");
+                }
+            },
+            function (session, results) {
+                var content = results.response;
+
+                var message = 'Cercando notizie';
+
+                message += ' su %s...';
+
+                session.send(message, content);
+
+                // Async search
+                Store
+                    .searchNews(content)
+                    .then((news) => {
+                        // args
+                        session.send('Ho trovato %d notizie:', news.length);
+
+                        var message = new builder.Message()
+                            .attachmentLayout(builder.AttachmentLayout.carousel)
+                            .attachments(news.map(newsAsAttachment));
+
+                        session.send(message);
+
+                        // End
+                        session.endDialog();
+                    });
             }
-        },
-        function (session, results) {
-            var content = results.response;
+        ])
+        .matches('CercaMeteo', [
+            function (session, args, next) {
+                session.send('Benvenuto! Stiamo analizzando il tuo messaggio: \'%s\'', session.message.text);
 
-            var message = 'Cercando notizie';
+                // try extracting entities
+                var contentEntity = builder.EntityRecognizer.findEntity(args.entities, 'searchContent');
+                var locationEntity = builder.EntityRecognizer.findEntity(args.entities, 'location');
+                //console.log("Entity: ");
+                //console.log(contentEntity);
+                if (locationEntity) {
+                    // content detected, continue to next step
+                    //session.dialogData.searchType = 'content';
+                    console.log("FOUND");
+                    next({ response: (locationEntity.entity) });
+                } else {
+                    // no entities detected, ask user for a content
+                    builder.Prompts.text(session, 'Per favore inserisci una località: ');
+                    console.log("NOTFOUND");
+                }
+            },
+            function (session, results) {
+                var content = results.response;
 
-            message += ' su %s...';
+                var message = 'Cercando informazioni meteo';
 
-            session.send(message, content);
+                message += ' su %s...';
 
-            // Async search
-            Store
-                .searchNews(content)
-                .then((news) => {
-                    // args
-                    session.send('Ho trovato %d notizie:', news.length);
+                session.send(message, content);
 
-                    var message = new builder.Message()
-                        .attachmentLayout(builder.AttachmentLayout.carousel)
-                        .attachments(news.map(newsAsAttachment));
+                // Async search
+                meteoService
+                    .getWeather(content)
+                    .then((text) => {
+                        // args
+                        session.send(text);
 
-                    session.send(message);
-
-                    // End
-                    session.endDialog();
-                });
-        }
-    ])
-    .matches('CercaMeteo', [
-        function (session, args, next) {
-            session.send('Benvenuto! Stiamo analizzando il tuo messaggio: \'%s\'', session.message.text);
-
-            // try extracting entities
-            var contentEntity = builder.EntityRecognizer.findEntity(args.entities, 'searchContent');
-            var locationEntity = builder.EntityRecognizer.findEntity(args.entities, 'location');
-            //console.log("Entity: ");
-            //console.log(contentEntity);
-            if (locationEntity) {
-                // content detected, continue to next step
-                //session.dialogData.searchType = 'content';
-                console.log("FOUND");
-                next({ response: (locationEntity.entity) });
-            } else {
-                // no entities detected, ask user for a content
-                builder.Prompts.text(session, 'Per favore inserisci una località: ');
-                console.log("NOTFOUND");
+                        // End
+                        session.endDialog();
+                    });
             }
-        },
-        function (session, results) {
-            var content = results.response;
 
-            var message = 'Cercando informazioni meteo';
+        ])
+        .matches('Saluto', (session) => {
+            //builder.DialogAction.send("Ciao! Benvenuto!")
+            r = Math.random();
+            console.log(r);
 
-            message += ' su %s...';
+            if (r < 0.33) {
+                message = "Ciao! Benvenuto!";
+            } else if (r < 0.66) {
+                message = "Buongiorno!";
+            } else {
+                message = "Buonasera!";
+            }
+            session.send(message);
+        })
+        .matches('Help', builder.DialogAction.send('Ciao! prova a chiedermi "cerca notizie su Microsoft" o "cerca meteo per Brescia" '))
+        .onDefault((session) => {
+            session.send('Mi spiace, ma non capisco \'%s\'. Scrivi \'Aiuto\' Se hai bisogno di assistenza.', session.message.text);
+        })
 
-            session.send(message, content);
+);
 
-            // Async search
-            meteoService
-                .getWeather(content)
-                .then((text) => {
-                    // args
-                    session.send(text);
 
-                    // End
-                    session.endDialog();
-                });
-        }
-
-    ])
-    .matches('Saluto', (session) => {
-        //builder.DialogAction.send("Ciao! Benvenuto!")
-        r = Math.random();
-        console.log(r);
-
-        if (r < 0.33) {
-            message = "Ciao! Benvenuto!";
-        } else if (r < 0.66) {
-            message = "Buongiorno!";
-        } else {
-            message = "Buonasera!";
-        }
-        session.send(message);
-    })
-    .matches('Help', builder.DialogAction.send('Ciao! prova a chiedermi "cerca notizie su Microsoft" o "cerca meteo per Brescia" '))
-    .onDefault((session) => {
-        session.send('Mi spiace, ma non capisco \'%s\'. Scrivi \'Aiuto\' Se hai bisogno di assistenza.', session.message.text);
-    }));
-
-if (process.env.IS_SPELL_CORRECTION_ENABLED === 'true') {
-    bot.use({
-        botbuilder: function (session, next) {
-            spellService
-                .getCorrectedText(session.message.text)
-                .then(text => {
-                    session.message.text = text;
-                    next();
-                })
-                .catch((error) => {
-                    console.error(error);
-                    next();
-                });
-        }
-    });
-}
 
 // Helpers
 function newsAsAttachment(news) {
