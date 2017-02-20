@@ -44,7 +44,7 @@ bot.dialog('/', [ function (session, args, next) {
             next();
         }
     },    
-    ()=>{new builder.IntentDialog({ recognizers: [recognizer] })
+    (session)=>{new builder.IntentDialog({ recognizers: [recognizer] })
     .matches('CercaNotizie', [
         function (session, args, next) {
             session.send('Benvenuto! Stiamo analizzando il tuo messaggio: \'%s\'', session.message.text);
