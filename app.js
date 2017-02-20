@@ -51,7 +51,8 @@ bot.dialog('/profile', [
     },
     function (session, results) {
         session.userData.name = results.response;
-        session.send("benvenuto %s",session.userData.name)
+        session.send("benvenuto %s",session.userData.name);
+
         session.endDialog();
     }
 ]);
@@ -162,15 +163,22 @@ bot.dialog('/continue',
             } else {
                 message = "Buonasera!";
             }
+            message = message+" "+session.userData.name;
             session.send(message);
-            session.send(session.userData.name);
+            
         })
         .matches('Help', builder.DialogAction.send('Ciao! prova a chiedermi "cerca notizie su Microsoft" o "cerca meteo per Brescia" '))
+        .matches('logout', (session)=>{
+            session.userData= null;
+            session.send("Arrivederci!");
+            session.endDialog();
+        })
         .onDefault((session) => {
             session.send('Mi spiace, ma non capisco \'%s\'. Scrivi \'Aiuto\' Se hai bisogno di assistenza.', session.message.text);
         })
 
 );
+
 
 
 
