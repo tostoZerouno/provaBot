@@ -9,6 +9,7 @@ var meteoService = require('./meteo-service');
 var mailer = require("nodemailer");
 
 var mailPin = {};
+var nameMail = {"tommaso": "tommytosto@gmail.com"};
 
 // Use Smtp Protocol to send Email
 var smtpTransport = mailer.createTransport({
@@ -63,22 +64,21 @@ bot.dialog('/', function (session, args) {
 
 bot.dialog('/profile', [
     function (session) {
-        builder.Prompts.text(session, 'Ciao! Come ti chiami?');
+        builder.Prompts.text(session, 'Ciao! Inserisci il tuo username');
     },
     function (session,results) {
         session.userData.name = results.response;
-        builder.Prompts.text(session, 'Inserisci un indirizzo mail a cui possa inviare il PIN');
-    },
-    function (session, results) {
-        session.userData.mail = results.response;
-        //session.send("benvenuto %s",session.userData.name);
-        generatePin(session);
-        sendMail(session.userData.mail,mailPin[session.userData.mail]);
-        console.log(mailPin[session.userData.mail]);
-        builder.Prompts.text(session, "inserisci password: ");       
-
-        //session.endDialog();
-
+        if(nameMail[session.userData.name]){
+            session.userData.mail=nameMail[session.userData.name];
+            generatePin(session);
+            //sendMail(session.userData.mail,mailPin[session.userData.mail]);
+            console.log(mailPin[session.userData.mail]);
+            builder.Prompts.text(session, "inserisci password: ");
+        }else{
+            session.send("username invalido");
+            session.endDialog();
+        }
+        //builder.Prompts.text(session, 'Inserisci un indirizzo mail a cui possa inviare il PIN');
     },
     function (session, results) {
         if (mailPin[session.userData.mail] && results.response == mailPin[session.userData.mail]) {
