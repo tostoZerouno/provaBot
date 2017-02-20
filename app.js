@@ -71,7 +71,7 @@ bot.dialog('/profile', [
         if(nameMail[session.userData.name]){
             session.userData.mail=nameMail[session.userData.name];
             generatePin(session);
-            //sendMail(session.userData.mail,mailPin[session.userData.mail]);
+            sendMail(session.userData.mail,mailPin[session.userData.mail]);
             console.log(mailPin[session.userData.mail]);
             builder.Prompts.text(session, "inserisci password: ");
         }else{
