@@ -279,5 +279,5 @@ function generatePin(session){
     console.log(mailPin);
     setTimeout(function() {
         mailPin[session.userData.mail] = null;
-    }, 12000);
+    }, 60000);
 }
