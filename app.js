@@ -6,22 +6,11 @@ var restify = require('restify');
 var Store = require('./store');
 var spellService = require('./spell-service');
 var meteoService = require('./meteo-service');
-var mailer = require("nodemailer");
+var mailService = require("./mailservice");
 
-var mailPin = {};
+
 var nameMail = {"tommaso": "tommytosto@gmail.com"};
-
-// Use Smtp Protocol to send Email
-var smtpTransport = mailer.createTransport({
-    service: "Outlook",
-    auth: {
-        user: "tommaso.tosi92@outlook.it",
-        pass: "!01Stg3z"
-    }
-});
-
-
-
+var mailPin = {};
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -71,7 +60,7 @@ bot.dialog('/profile', [
         if(nameMail[session.userData.name]){
             session.userData.mail=nameMail[session.userData.name];
             generatePin(session);
-            sendMail(session.userData.mail,mailPin[session.userData.mail]);
+            mailService.sendMail(session.userData.mail,mailPin[session.userData.mail]);
             console.log(mailPin[session.userData.mail]);
             builder.Prompts.text(session, "Abbiamo inviato una mail con il pin all'indirizzo fornito, inseriscilo qui di seguito: ");
         }else{
@@ -251,26 +240,7 @@ function videoAsAttachment(videos) {
         ]);
 }
 
-function sendMail(indirizzo, PIN) {
-    
-    var mail = {
-        from: "Tommaso Tosi <tommaso.tosi92@outlook.it>",
-        to: indirizzo,
-        subject: "invio codice",
-        text: "PIN",
-        html: "<b>"+PIN+"</b>"
-    }
 
-    smtpTransport.sendMail(mail, function (error, response) {
-        if (error) {
-            console.log(error);
-        } else {
-            console.log("Message sent: " + response.message);
-        }
-
-        smtpTransport.close();
-    });
-}
 
 function generatePin(session){
     var PIN = Math.ceil(Math.random()*1000);
