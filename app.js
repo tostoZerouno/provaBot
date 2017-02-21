@@ -4,7 +4,6 @@ require('dotenv-extended').load();
 var builder = require('botbuilder');
 var restify = require('restify');
 var Store = require('./store');
-var spellService = require('./spell-service');
 var meteoService = require('./meteo-service');
 var mailService = require("./mailservice");
 
