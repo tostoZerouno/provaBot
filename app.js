@@ -12,7 +12,7 @@ const timeout = process.env.AUTO_LOGOUT_TIMEOUT || 20;
 
 var nameMail = { "tommaso": "tommytosto@gmail.com" };
 var mailPin = {};
-/*var usernameTime = {};*/
+//PIN-Time, cosa conviene usare come identificativo per l'utente?
 var activityLog ={};
 
 // Setup Restify Server
@@ -53,7 +53,6 @@ bot.dialog('/', function (session, args) {
 bot.dialog('/profile', [
     function (session) {
         builder.Prompts.confirm(session, "vuoi effettuare l'accesso?");
-
     },
     function (session, results) {
         if (results.response) {
@@ -83,7 +82,8 @@ bot.dialog('/profile', [
         if (mailPin[session.userData.mail] && results.response == mailPin[session.userData.mail]) {
             session.userData.authenticated = true;
             session.send("benvenuto %s", session.userData.name);
-            setSessionPIN(session, mailPin[session.userData.mail]);
+            //setSessionPIN(session, mailPin[session.userData.mail]);
+            setSessionID(session, mailPin[session.userData.mail]);
             setLastActivity(session);
             //FIXME logout automatico
             autoLogout(session);
@@ -274,12 +274,13 @@ function generatePin(session) {
     mailPin[session.userData.mail] = PIN;
     console.log(mailPin);
     setTimeout(function () {
-        mailPin[session.userData.mail] = null;
+        delete mailPin[session.userData.mail];
     }, 600000);
 }
 
 
 function logout(session) {
+    delete activityLog[session.userData.sessionId];
     session.userData = {};
     session.endDialog();
     session.sendBatch();
@@ -290,8 +291,8 @@ function logout(session) {
 function setLastActivity(session) {
     console.log('\n\n\n\n\n');
     var date = session.message.timestamp;
-    /*usernameTime[session.userData.name] = date;*/
-    activityLog[session.userData.pin] = date;
+    //activityLog[session.userData.pin] = date;
+    activityLog[session.userData.sessionId] = date;
     autoLogout(session);
     
 }
@@ -300,12 +301,7 @@ function autoLogout(session) {
 
     setTimeout(function () {
 
-        /*if (session.message.timestamp == usernameTime[session.userData.name]) {
-            logout(session);
-            session.endDialog();
-        }*/
-
-        if (session.message.timestamp == activityLog[session.userData.pin]) {
+        if (session.message.timestamp == activityLog[session.userData.sessionId]) {
             logout(session);
             session.endDialog();
         }
@@ -316,6 +312,10 @@ function autoLogout(session) {
 
 function setSessionPIN(session, pin) {
     session.userData.pin = pin;
+}
+
+function setSessionID(session, pin) {
+    session.userData.sessionId = session.userData.name+pin;
 }
 
 
