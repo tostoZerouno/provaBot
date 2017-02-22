@@ -67,7 +67,9 @@ bot.dialog('/profile', [
         if (nameMail[session.userData.name]) {
             session.userData.mail = nameMail[session.userData.name];
             generatePin(session);
-            //mailService.sendMail(session.userData.mail, mailPin[session.userData.mail]);
+            if(process.env.ACTIVATE_MAIL){
+                mailService.sendMail(session.userData.mail, mailPin[session.userData.mail]);
+            }
             console.log(mailPin[session.userData.mail]);
             builder.Prompts.text(session, "Abbiamo inviato una mail con il pin all'indirizzo fornito, inseriscilo qui di seguito: ");
         } else {
