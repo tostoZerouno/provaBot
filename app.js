@@ -45,7 +45,7 @@ bot.dialog('/', function (session, args) {
     if (!session.userData.authenticated) {
         session.beginDialog('/profile');
     } else {
-        console.log(session.message.address);
+        console.log(session.message.address.user.id);
         session.replaceDialog('/continue');
     }
 });
@@ -315,7 +315,8 @@ function setSessionPIN(session, pin) {
 }
 
 function setSessionID(session, pin) {
-    session.userData.sessionId = session.userData.name+pin;
+    session.userData.sessionId = session.message.address.user.id;
+    console.log(session.message.address.user.id);
 }
 
 
