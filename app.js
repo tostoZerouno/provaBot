@@ -12,7 +12,8 @@ const timeout = process.env.AUTO_LOGOUT_TIMEOUT || 20;
 
 var nameMail = { "tommaso": "tommytosto@gmail.com" };
 var mailPin = {};
-var usernameTime = {};
+/*var usernameTime = {};*/
+var activityLog ={};
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -82,6 +83,7 @@ bot.dialog('/profile', [
         if (mailPin[session.userData.mail] && results.response == mailPin[session.userData.mail]) {
             session.userData.authenticated = true;
             session.send("benvenuto %s", session.userData.name);
+            setSessionPIN(session, mailPin[session.userData.mail]);
             setLastActivity(session);
             //FIXME logout automatico
             autoLogout(session);
@@ -288,21 +290,32 @@ function logout(session) {
 function setLastActivity(session) {
     console.log('\n\n\n\n\n');
     var date = session.message.timestamp;
-    usernameTime[session.userData.name] = date;
+    /*usernameTime[session.userData.name] = date;*/
+    activityLog[session.userData.pin] = date;
     autoLogout(session);
+    
 }
 
 function autoLogout(session) {
 
     setTimeout(function () {
 
-        if (session.message.timestamp == usernameTime[session.userData.name]) {
+        /*if (session.message.timestamp == usernameTime[session.userData.name]) {
+            logout(session);
+            session.endDialog();
+        }*/
+
+        if (session.message.timestamp == activityLog[session.userData.pin]) {
             logout(session);
             session.endDialog();
         }
         
     }, 1000 * timeout);
 
+}
+
+function setSessionPIN(session, pin) {
+    session.userData.pin = pin;
 }
 
 
