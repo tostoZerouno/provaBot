@@ -7,19 +7,18 @@ var Store = require('./store');
 var meteoService = require('./meteo-service');
 var mailService = require("./mailservice");
 
+const timeout = process.env.AUTO_LOGOUT_TIMEOUT || 20;
 
-var nameMail = {"tommaso": "tommytosto@gmail.com"};
+
+var nameMail = { "tommaso": "tommytosto@gmail.com" };
 var mailPin = {};
+var usernameTime = {};
 
 // Setup Restify Server
 var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 443, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
-
-//server.get(/\/docs\/public\/?.*/, restify.serveStatic({
-//  directory: './public'
-//}));
 
 server.get(/.*/, restify.serveStatic({
     directory: './static',
@@ -52,17 +51,26 @@ bot.dialog('/', function (session, args) {
 
 bot.dialog('/profile', [
     function (session) {
-        builder.Prompts.text(session, 'Ciao! Inserisci il tuo username');
+        builder.Prompts.confirm(session, "vuoi effettuare l'accesso?");
+
     },
-    function (session,results) {
+    function (session, results) {
+        if (results.response) {
+            builder.Prompts.text(session, 'Ciao! Inserisci il tuo username');
+        } else {
+            session.send("OK! Scrivimi pure quando ne hai bisogno");
+            session.endConversation();
+        }
+    },
+    function (session, results) {
         session.userData.name = results.response;
-        if(nameMail[session.userData.name]){
-            session.userData.mail=nameMail[session.userData.name];
+        if (nameMail[session.userData.name]) {
+            session.userData.mail = nameMail[session.userData.name];
             generatePin(session);
-            mailService.sendMail(session.userData.mail,mailPin[session.userData.mail]);
+            //mailService.sendMail(session.userData.mail, mailPin[session.userData.mail]);
             console.log(mailPin[session.userData.mail]);
             builder.Prompts.text(session, "Abbiamo inviato una mail con il pin all'indirizzo fornito, inseriscilo qui di seguito: ");
-        }else{
+        } else {
             session.send("username invalido");
             session.endDialog();
         }
@@ -72,10 +80,14 @@ bot.dialog('/profile', [
         if (mailPin[session.userData.mail] && results.response == mailPin[session.userData.mail]) {
             session.userData.authenticated = true;
             session.send("benvenuto %s", session.userData.name);
+            setLastActivity(session);
+            //FIXME logout automatico
+            autoLogout(session);
+
         } else {
             console.log(mailPin[session.userData.mail]);
             session.send("password errata, utente non autorizzato");
-            session.userData = null;
+            logout(session);
         }
         session.endDialog();
     }
@@ -194,9 +206,10 @@ bot.dialog('/continue',
         })
         .matches('Help', builder.DialogAction.send('Ciao! prova a chiedermi "cerca notizie su Microsoft" o "cerca meteo per Brescia" '))
         .matches('logout', (session) => {
-            session.userData = null;
+            logout(session);
             session.send("Arrivederci!");
             session.endDialog();
+
         })
         .onDefault((session) => {
             session.send('Mi spiace, ma non capisco \'%s\'. Scrivi \'Aiuto\' Se hai bisogno di assistenza.', session.message.text);
@@ -204,7 +217,18 @@ bot.dialog('/continue',
 
 );
 
-
+if (process.env.IS_AUTO_LOGOUT_ENABLED === 'true') {
+    bot.use({
+        botbuilder: function (session, next) {
+            if (session.userData.authenticated) {
+                setLastActivity(session);
+                next();
+            } else {
+                next();
+            }
+        }
+    });
+}
 
 
 // Helpers
@@ -240,13 +264,44 @@ function videoAsAttachment(videos) {
 }
 
 
-
-function generatePin(session){
-    var PIN = Math.ceil(Math.random()*1000);
+function generatePin(session) {
+    var PIN = Math.ceil(Math.random() * 1000);
     //session.userData.pin = PIN;
-    mailPin[session.userData.mail]=PIN;
+    mailPin[session.userData.mail] = PIN;
     console.log(mailPin);
-    setTimeout(function() {
+    setTimeout(function () {
         mailPin[session.userData.mail] = null;
     }, 600000);
 }
+
+
+function logout(session) {
+    session.userData = {};
+    session.endDialog();
+    session.sendBatch();
+    console.log(session.message.timestamp);
+    //session.endDialog();
+}
+
+function setLastActivity(session) {
+    console.log('\n\n\n\n\n');
+    var date = session.message.timestamp;
+    usernameTime[session.userData.name] = date;
+    autoLogout(session);
+}
+
+function autoLogout(session) {
+
+    setTimeout(function () {
+
+        if (session.message.timestamp == usernameTime[session.userData.name]) {
+            logout(session);
+            session.endDialog();
+        }
+        
+    }, 1000 * timeout);
+
+}
+
+
+
