@@ -9,8 +9,8 @@ var mailService = require("./mail-service");
 
 const timeout = process.env.AUTO_LOGOUT_TIMEOUT || 20;
 
-
-var nameMail = { "tommaso": "tommytosto@gmail.com", "luigi": "tommytosto@gmail.com" };
+//si suppone che ad ogni mail sia associato solo uno username
+var nameMail = { "tommaso": "tommytosto@gmail.com", "luigi": "tommaso.tosi92@outlook.it" };
 var mailPin = {};
 //userID-Time, cosa conviene usare come identificativo per l'utente?
 var userLastactivity = {};
