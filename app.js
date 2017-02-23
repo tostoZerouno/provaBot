@@ -5,15 +5,15 @@ var builder = require('botbuilder');
 var restify = require('restify');
 var Store = require('./store');
 var meteoService = require('./meteo-service');
-var mailService = require("./mailservice");
+var mailService = require("./mail-service");
 
 const timeout = process.env.AUTO_LOGOUT_TIMEOUT || 20;
 
 
-var nameMail = { "tommaso": "tommytosto@gmail.com" };
+var nameMail = { "tommaso": "tommytosto@gmail.com", "luigi": "tommytosto@gmail.com" };
 var mailPin = {};
-//PIN-Time, cosa conviene usare come identificativo per l'utente?
-var activityLog ={};
+//userID-Time, cosa conviene usare come identificativo per l'utente?
+var userLastactivity = {};
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -43,6 +43,7 @@ var recognizer = new builder.LuisRecognizer(LuisModelUrl);
 //console.log('cosa matchi? \'%s\'', recognizer.matches);
 bot.dialog('/', function (session, args) {
     if (!session.userData.authenticated) {
+        session.endDialog();
         session.beginDialog('/profile');
     } else {
         console.log(session.message.address.user.id);
@@ -67,14 +68,15 @@ bot.dialog('/profile', [
         if (nameMail[session.userData.name]) {
             session.userData.mail = nameMail[session.userData.name];
             generatePin(session);
-            if(process.env.ACTIVATE_MAIL){
+            if (process.env.ACTIVATE_MAIL) {
                 mailService.sendMail(session.userData.mail, mailPin[session.userData.mail]);
             }
-            console.log(mailPin[session.userData.mail]);
+            //console.log(mailPin[session.userData.mail]);
             builder.Prompts.text(session, "Abbiamo inviato una mail con il pin all'indirizzo fornito, inseriscilo qui di seguito: ");
         } else {
             session.send("username invalido");
-            session.endDialog();
+            session.endConversation();
+            session.beginDialog('/profile');
         }
         //builder.Prompts.text(session, 'Inserisci un indirizzo mail a cui possa inviare il PIN');
     },
@@ -85,15 +87,14 @@ bot.dialog('/profile', [
             //setSessionPIN(session, mailPin[session.userData.mail]);
             setSessionID(session, mailPin[session.userData.mail]);
             setLastActivity(session);
-            //FIXME logout automatico
-            autoLogout(session);
 
         } else {
-            console.log(mailPin[session.userData.mail]);
+            //console.log(mailPin[session.userData.mail]);
             session.send("password errata, utente non autorizzato");
             logout(session);
         }
-        session.endDialog();
+        //session.endDialog();
+        session.endConversation();
     }
 ]);
 
@@ -111,15 +112,15 @@ bot.dialog('/continue',
                 if (contentEntity) {
                     // content detected, continue to next step
                     //session.dialogData.searchType = 'content';
-                    console.log("FOUND");
+                    //console.log("FOUND");
                     next({ response: contentEntity.entity });
                 } else if (locationEntity) {
-                    console.log("FOUND");
+                    //console.log("FOUND");
                     next({ response: locationEntity.entity });
                 } else {
                     // no entities detected, ask user for a content
                     builder.Prompts.text(session, 'Per favore inserisci il contenuto da cercare: ');
-                    console.log("NOTFOUND");
+                    //console.log("NOTFOUND");
                 }
             },
             function (session, results) {
@@ -132,8 +133,7 @@ bot.dialog('/continue',
                 session.send(message, content);
 
                 // Async search
-                Store
-                    .searchNews(content)
+                Store.searchNews(content)
                     .then((news) => {
                         // args
                         session.send('Ho trovato %d notizie:', news.length);
@@ -161,12 +161,12 @@ bot.dialog('/continue',
                 if (locationEntity) {
                     // content detected, continue to next step
                     //session.dialogData.searchType = 'content';
-                    console.log("FOUND");
+                    //console.log("FOUND");
                     next({ response: (locationEntity.entity) });
                 } else {
                     // no entities detected, ask user for a content
                     builder.Prompts.text(session, 'Per favore inserisci una località: ');
-                    console.log("NOTFOUND");
+                    //console.log("NOTFOUND");
                 }
             },
             function (session, results) {
@@ -179,8 +179,7 @@ bot.dialog('/continue',
                 session.send(message, content);
 
                 // Async search
-                meteoService
-                    .getWeather(content)
+                meteoService.getWeather(content)
                     .then((text) => {
                         // args
                         session.send(text);
@@ -194,7 +193,7 @@ bot.dialog('/continue',
         .matches('Saluto', (session) => {
             //builder.DialogAction.send("Ciao! Benvenuto!")
             r = Math.random();
-            console.log(r);
+            //console.log(r);
 
             if (r < 0.33) {
                 message = "Ciao! Benvenuto!";
@@ -224,20 +223,36 @@ bot.dialog('/continue',
 if (process.env.IS_AUTO_LOGOUT_ENABLED === 'true') {
     bot.use({
         botbuilder: function (session, next) {
+            //console.log("UNO");
             if (session.userData.authenticated) {
                 setLastActivity(session);
-                next();
-            } else {
-                next();
             }
+            next();
         }
     });
 }
 
+bot.use({
+    botbuilder:
+    function (session, next) {
+        //console.log("DUE");
+        //console.log("dialogId: "+session.options.dialogId);
+        //console.log(session);
+        if (session.dialogData && session.dialogData.promptType == 2) {
+            //console.log("SIoNO");
+            if (session.message.text.toLowerCase() == "si") {
+                session.message.text = "sì";
+            }
+        }
+        //if(session.options.dialogId)
+        next();
+    }
+})
+
 
 // Helpers
 function newsAsAttachment(news) {
-    console.log("name: %s", news.name);
+    //console.log("name: %s", news.name);
     return new builder.HeroCard()
         .title(news.name)
         .subtitle('%s...', news.description.substring(0, 50))
@@ -252,7 +267,7 @@ function newsAsAttachment(news) {
 }
 
 function videoAsAttachment(videos) {
-    console.log("name: %s", videos.name);
+    //console.log("name: %s", videos.name);
     return new builder.HeroCard()
         .title(videos.name)
         .subtitle('%s...', videos.description.substring(0, 50))
@@ -280,34 +295,27 @@ function generatePin(session) {
 
 
 function logout(session) {
-    delete activityLog[session.userData.sessionId];
+    delete userLastactivity[session.userData.sessionId];
     session.userData = {};
     session.endDialog();
     session.sendBatch();
-    console.log(session.message.timestamp);
+    console.log("log-out at " + session.message.timestamp);
     //session.endDialog();
 }
 
 function setLastActivity(session) {
-    console.log('\n\n\n\n\n');
-    var date = session.message.timestamp;
-    //activityLog[session.userData.pin] = date;
-    activityLog[session.userData.sessionId] = date;
+    //console.log('\n\n\n\n\n');
+    userLastactivity[session.userData.sessionId] = session.message.timestamp;
     autoLogout(session);
-    
 }
 
 function autoLogout(session) {
-
     setTimeout(function () {
-
-        if (session.message.timestamp == activityLog[session.userData.sessionId]) {
+        if (session.message.timestamp == userLastactivity[session.userData.sessionId]) {
             logout(session);
             session.endDialog();
         }
-        
     }, 1000 * timeout);
-
 }
 
 function setSessionPIN(session, pin) {
